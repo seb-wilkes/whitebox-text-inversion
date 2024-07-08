@@ -1,18 +1,5 @@
 import numpy as np
 import torch
-from utils import convert_text_into_embeddings
-
-
-def optimize_in_embedding_space(embeddings_i, loss_fn, optimiser):
-    '''This function optimizes the embeddings in the embedding space,
-    according to the loss function provided.'''
-    your_mom = np.inf
-    return your_mom
-
-import gc
-
-import numpy as np
-import torch
 import torch.nn as nn
 from tqdm.auto import tqdm
 
