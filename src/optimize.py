@@ -20,7 +20,7 @@ from llm_attacks import AttackPrompt, MultiPromptAttack, PromptManager
 from llm_attacks import get_embedding_matrix, get_embeddings
 
 
-def token_gradients(model, tokenizer, input_ids, input_slice, loss_func):
+def token_gradients_with_arb_loss(model, tokenizer, input_ids, input_slice, loss_func):
 
     """
     Computes gradients of the loss with respect to the coordinates.
@@ -60,7 +60,6 @@ def token_gradients(model, tokenizer, input_ids, input_slice, loss_func):
     input_embeds = (one_hot @ embed_weights).unsqueeze(0)
     
     # now stitch it together with the rest of the embeddings
-    
 
     embeds = get_embeddings(model, input_ids.unsqueeze(0)).detach()
     full_embeds = torch.cat(
