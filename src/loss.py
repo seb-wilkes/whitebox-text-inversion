@@ -1,5 +1,15 @@
 import torch
 
+
+IMPLEMENTED_METHODS = ['max_layer_entropy']
+
+def get_loss_function(loss_request):    
+    if loss_request.lower() not in IMPLEMENTED_METHODS:
+		raise NotImplementedError(f"Loss approach '{method_request}' not implemented")
+	
+ 	if method == 'max_layer_entropy':
+		return return_maximise_entropy_with_zero_penalty(**kwargs)
+
 def maximise_entropy_with_zero_penalty(activations, zero_penalty=0.1):
 		# This method attempts to minimise the variance in the activations;
 		# there may be better methods but for now this is good enough
