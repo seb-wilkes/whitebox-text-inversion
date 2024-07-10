@@ -2,19 +2,19 @@ import torch.nn as nn
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import types
 
-def get_model_wrapper(model_id: str, maximum_layer=None: int, keep_head=False: bool) -> nn.Module:
+def get_model_wrapper(model_id: str, maximum_layer: int = None, keep_head: bool = False, device="cuda") -> nn.Module:
     if maximum_layer is not None:
-        return truncate_model(model_id, maximum_layer, keep_head), \
+        return truncate_model(model_id, maximum_layer, keep_head, device), \
             AutoTokenizer.from_pretrained(model_id)
     else:
-        return AutoModelForCausalLM.from_pretrained(model_id), \
+        return AutoModelForCausalLM.from_pretrained(model_id).to(device=device), \
             AutoTokenizer.from_pretrained(model_id)
 
-def truncate_model(model_id: str, maximum_layer: int, keep_head=False: bool) -> nn.Module:
+def truncate_model(model_id: str, maximum_layer: int, keep_head: bool = False, device="cuda") -> nn.Module:
     '''This truncates the LM up to the target layer, meaning
     that inference is faster. As such the output of model.generate
     will be the desired activation layer'''
-    model = AutoModelForCausalLM.from_pretrained(model_id)
+    model = AutoModelForCausalLM.from_pretrained(model_id).to(device)
     
     if hasattr(model, 'transformer') and hasattr(model.transformer, 'h'):
         # Truncate the list of layers
@@ -35,9 +35,9 @@ def truncate_model(model_id: str, maximum_layer: int, keep_head=False: bool) -> 
                 model.transformer.ln_f = nn.Identity(model.transformer.ln_f.normalized_shape)
         
         # Modify the forward method to return the output of the last transformer block
-        def new_forward(self, input_ids, attention_mask=None, token_type_ids=None, position_ids=None, head_mask=None, inputs_embeds=None, output_attentions=None, output_hidden_states=None, return_dict=None):
+        def new_forward(self, input_ids=None, attention_mask=None, token_type_ids=None, position_ids=None, head_mask=None, inputs_embeds=None, output_attentions=None, output_hidden_states=None, return_dict=None):
             outputs = self.transformer(
-                input_ids,
+                input_ids=input_ids,
                 attention_mask=attention_mask,
                 token_type_ids=token_type_ids,
                 position_ids=position_ids,
@@ -54,4 +54,3 @@ def truncate_model(model_id: str, maximum_layer: int, keep_head=False: bool) -> 
         raise ValueError("Model structure not as expected. Please check the model architecture.")
     
     return model
-
