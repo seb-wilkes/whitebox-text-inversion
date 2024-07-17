@@ -7,7 +7,7 @@ from typing import Callable
 from .utils import to_relaxed_one_hot, simplex_projection, entropy_projection
 import gs
 
-def attack(model, tokenizer, config, loss_func: Callable, verbose: bool = False, discrete_loss_sample_rate: int = 1):
+def attack(model, tokenizer, config, loss_func: Callable, top_k_sampling: int = 1, verbose: bool = False, discrete_loss_sample_rate: int = 1):
     device = next(model.parameters()).device
     
     if config.optimizer == "adamw":
@@ -68,7 +68,16 @@ def attack(model, tokenizer, config, loss_func: Callable, verbose: bool = False,
             gc.collect()
             torch.cuda.empty_cache()
         current_entropy += entropy_delta
-        discrete = torch.argmax(inputs.data[:, suffix_slice], dim=2)
+        if top_k_sampling != 1:
+            top_k_samples, top_k_indices = torch.topk(inputs.data[:, suffix_slice], top_k_sampling, dim=2, largest=True)
+            cum_k = top_k_samples.cumsum(dim=2) / top_k_samples.sum(dim=2).unsqueeze(-1)
+            # randomly select candidates from top k
+            selected_indices = torch.searchsorted(cum_k, torch.rand(top_k_samples.shape[:-1]).unsqueeze(-1))
+            discrete = torch.gather(top_k_indices, 
+                                    2, 
+                                    selected_indices).squeeze(-1)
+        else:
+            discrete = torch.argmax(inputs.data[:, suffix_slice], dim=2)
         all_tokens[:, suffix_slice] = discrete
         if verbose or config.wandb_logging:
           save_loss = loss.detach().cpu().mean()
